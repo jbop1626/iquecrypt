@@ -53,5 +53,6 @@ Examples:
 		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, and [cid]_content_iv.bin in same directory.  
 			   
 		iquecrypt extract -ticket my_tickets -cid 98967F  
-		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin, [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.
+		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin,  
+		        [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.
 ````
