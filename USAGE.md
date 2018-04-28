@@ -19,10 +19,10 @@ Usage:
 		
 Parameters:  	
 		-app	.app file input  
-		-tk		encrypted title key input  
+		-tk	encrypted title key input  
 		-key	encryption key input (in hexadecimal) on command line  
 		-fkey	encryption key input from file  
-		-iv		initialization vector input (in hexadecimal) on command line  
+		-iv	initialization vector input (in hexadecimal) on command line  
 		-fiv	initialization vector input from file  
 		
 Example:  
@@ -50,7 +50,8 @@ Parameters:
 		
 Examples:  
 		iquecrypt extract -cmd 98967F.cmd  
-		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, and [cid]_content_iv.bin in same directory.  
+		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, and [cid]_content_iv.bin  
+		        in same directory.  
 			   
 		iquecrypt extract -ticket my_tickets -cid 98967F  
 		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin,  
