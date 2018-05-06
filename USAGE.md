@@ -49,11 +49,11 @@ Parameters:
 		-cid	content id (in hexadecimal) of requested entry in ticket.sys  
 		
 Examples:  
-		iquecrypt extract -cmd 98967F.cmd  
+		iquecrypt extract -cmd 0098967F.cmd  
 		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, and [cid]_content_iv.bin  
 		        in same directory.  
 			   
-		iquecrypt extract -ticket my_tickets -cid 98967F  
+		iquecrypt extract -ticket my_tickets -cid 0098967F  
 		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin,  
 		        [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.
 ````
