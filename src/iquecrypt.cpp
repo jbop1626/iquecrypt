@@ -1,5 +1,5 @@
 /*
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright Â© 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -99,7 +99,7 @@ void extract_cmd(std::string cmd_file_name) {
 
 	std::stringstream ss;
 	for (int i = 0; i < 4; ++i) {
-		ss << std::hex << (int)content_id[i];
+		ss << std::setw(2) << std::setfill('0') << std::hex << (int)content_id[i];
 	}
 	std::string cid_str = ss.str();
 
@@ -139,7 +139,7 @@ void extract_ticket(std::string tkt_file_name, std::string content_id) {
 	}
 	uint8_t * cmd_start = buffer;
 	for (int i = 0; i <= file_length - 4; ++i) {
-		if (buffer[i] == cid[0] && buffer[i + 1] == cid[1] && buffer[i + 2] == cid[2] && buffer[i + 3] == cid[3]) {
+		if (memcmp(buffer, cid, 4 == 0)) {
 			cmd_start = &buffer[i] - 0x98;
 			break;
 		}
