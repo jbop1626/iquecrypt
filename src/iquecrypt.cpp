@@ -1,5 +1,5 @@
 /*
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -52,8 +52,9 @@ void ique_extract(char * argv[], int argc) {
 
 void aes_decrypt_file(std::string file_name, bool length_known, int file_length,
 	std::string k_par, std::string k_input, std::string iv_par, std::string iv_input) {
+
 	uint8_t * file_buffer = read_file(file_name, length_known, file_length);
-	if (!(file_length % 16 == 0)) {
+	if (file_length % 16 != 0) {
 		file_size_error();
 	}
 
@@ -74,10 +75,6 @@ void aes_decrypt_file(std::string file_name, bool length_known, int file_length,
 
 void extract_cmd(std::string cmd_file_name) {
 	bool is_SA = false;
-	uint8_t * title_key_enc;
-	uint8_t * content_iv;
-	uint8_t * title_key_iv;
-	uint8_t * content_id;
 
 	int cmd_file_length = 0;
 	uint8_t * cmd_buffer = read_file(cmd_file_name, false, cmd_file_length);
@@ -92,16 +89,19 @@ void extract_cmd(std::string cmd_file_name) {
 		file_size_error();
 	}
 	int offset = is_SA ? 0 : 0x2800;
-	title_key_enc = &cmd_buffer[0x9c + offset];
-	content_iv = &cmd_buffer[0x38 + offset];
-	title_key_iv = &cmd_buffer[0x14 + offset];
-	content_id = &cmd_buffer[0x98 + offset];
+	uint8_t * title_key_enc = &cmd_buffer[0x9c + offset];
+	uint8_t * content_iv = &cmd_buffer[0x38 + offset];
+	uint8_t * title_key_iv = &cmd_buffer[0x14 + offset];
+	uint8_t * content_id = &cmd_buffer[0x98 + offset];
 
 	std::stringstream ss;
 	for (int i = 0; i < 4; ++i) {
 		ss << std::setw(2) << std::setfill('0') << std::hex << (int)content_id[i];
 	}
 	std::string cid_str = ss.str();
+	for (int s = 0; s < cid_str.length(); ++s) {
+		cid_str[s] = tolower(cid_str[s]);
+	}
 
 	std::cout << "Extracting files from cmd..." << std::endl;
 	std::cout << "Extracting title_key_enc..." << std::endl;
@@ -115,40 +115,40 @@ void extract_cmd(std::string cmd_file_name) {
 }
 
 void extract_ticket(std::string tkt_file_name, std::string content_id) {
-	std::ifstream fin;
-	fin.open(tkt_file_name, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
-
-	if (!fin.is_open()) {
-		fin.clear();
-		file_error(tkt_file_name);
+	if (content_id.length() != 8) {
+		std::cerr << "The provided content id is invalid." << std::endl << "Make sure it is in hexadecimal with all 8 digits." << std::endl << std::endl;
+		argument_error();
 	}
-	int file_length = fin.tellg();
-	fin.seekg(0, std::ios::beg);
-	uint8_t * buffer = new uint8_t[file_length];
-	fin.read((char *)buffer, file_length);
-	fin.clear();
-	fin.close();
+	for (int s = 0; s < content_id.length(); ++s) {
+		content_id[s] = tolower(content_id[s]);
+	}
+
+	int tkt_file_length = 0;
+	uint8_t * ticket_sys = read_file(tkt_file_name, false, tkt_file_length);
 
 	uint8_t cid[4];
 	int m = 0;
 	for (int n = 0; n <= 6; n+=2) {
-		std::string sbyte = content_id.substr(n, 2);
-		uint8_t ibyte = std::stoi(sbyte, nullptr, 16);
-		cid[m] = ibyte;
+		cid[m] = std::stoi(content_id.substr(n, 2), nullptr, 16);
 		m++;
 	}
-	uint8_t * cmd_start = buffer;
-	for (int i = 0; i <= file_length - 4; ++i) {
-		if (memcmp(buffer, cid, 4 == 0)) {
-			cmd_start = &buffer[i] - 0x98;
+
+	uint8_t ticket_count = ticket_sys[3];
+	uint8_t * cmd_start = nullptr;
+	uint8_t * tmp_ptr = ticket_sys + 0x289C;
+	for (int i = 1; i <= ticket_count; ++i) {
+		if (std::memcmp(tmp_ptr, cid, 4) == 0) {
+			cmd_start = tmp_ptr - 0x98;
+			std::cout << "Entry for " << content_id << " found in " << tkt_file_name << std::endl;
 			break;
 		}
-		else if (i >= file_length - 4) {
-			search_error(content_id);
-		}
+		tmp_ptr += 0x2B4C;
+	}
+	if (cmd_start == nullptr) {
+		search_error(content_id, tkt_file_name);
 	}
 
-	std::cout << "Extracting files from cmd..." << std::endl;
+	std::cout << "Extracting files from content metadata..." << std::endl;
 	uint8_t * title_key_enc = &cmd_start[0x9c];
 	uint8_t * content_iv = &cmd_start[0x38];
 	uint8_t * title_key_iv = &cmd_start[0x14];
@@ -158,29 +158,30 @@ void extract_ticket(std::string tkt_file_name, std::string content_id) {
 	write_file(content_id + "_content_iv.bin", content_iv, 16);
 	std::cout << "Extracting title_key_iv..." << std::endl;
 	write_file(content_id + "_title_key_iv.bin", title_key_iv, 16);
-	std::cout << "Extraction from cmd complete!" << std::endl;
+	std::cout << "Extraction from content metadata complete!" << std::endl;
 
-	std::cout << "Extracting files from ticket..." << std::endl;
 	uint8_t * ticket_start = &cmd_start[0x1AC];
+
+	std::cout << "Extracting files from ticket head..." << std::endl;
 	uint8_t * title_key_iv_2 = &ticket_start[0x10];
 	uint8_t * ecc_public_key = &ticket_start[0x20];
 	std::cout << "Extracting title_key_iv_2..." << std::endl;
 	write_file(content_id + "_title_key_iv_2.bin", title_key_iv_2, 16);
 	std::cout << "Extracting ecc_public_key..." << std::endl;
 	write_file(content_id + "_ecc_public_key.bin", ecc_public_key, 64);
+	delete[] ticket_sys;
 	std::cout << "Extraction from ticket complete!" << std::endl;
 }
 
 uint8_t * read_file(std::string in_file_name, bool length_known, int & expected_length) {
 	std::ifstream fin;
 	fin.open(in_file_name, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
-
-	if (!fin.is_open()) {
+		if (!fin.is_open()) {
 		fin.clear();
 		file_error(in_file_name);
 	}
 	int file_length = fin.tellg();
-	if (length_known && !(file_length == expected_length)) {
+	if (length_known && (file_length != expected_length)) {
 		file_size_error();
 	}
 	expected_length = file_length;
@@ -209,28 +210,15 @@ void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer) {
 		}
 		int j = 0;
 		for (int i = 0; i <= 30; i+=2) {
-			std::string sbyte = input.substr(i, 2);
-			uint8_t ibyte = std::stoi(sbyte, nullptr, 16);
-			key_buffer[j] = ibyte;
+			key_buffer[j] = std::stoi(input.substr(i, 2), nullptr, 16);;
 			j++;
 		}
 	}
 	else if (par == "-fkey" || par == "-fiv") {
-		std::ifstream fin;
-		fin.open(input, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
-
-		if (!fin.is_open()) {
-			fin.clear();
-			file_error(input);
-		}
-		int file_length = fin.tellg();
-		if (file_length != 16) {
-			file_size_error();
-		}
-		fin.seekg(0, std::ios::beg);
-		fin.read((char *)key_buffer, 16);
-		fin.clear();
-		fin.close();
+		int key_length = 16;
+		uint8_t * tmp = read_file(input, true, key_length);
+		std::memcpy(key_buffer, tmp, 16);
+		delete[] tmp;
 	}
 	else {
 		argument_error();
@@ -238,7 +226,7 @@ void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer) {
 }
 
 void argument_error() {
-	std::cerr << "ERROR: Invalid arguments. Run iquecrypt with -h or --h for help with usage and other info." << std::endl;
+	std::cerr << "ERROR: Invalid arguments." << std::endl << "Run iquecrypt with -h or --help for usage help and other info." << std::endl;
 	std::exit(EXIT_FAILURE);
 }
 
@@ -252,8 +240,8 @@ void file_error(std::string file_name) {
 	std::exit(EXIT_FAILURE);
 }
 
-void search_error(std::string cid) {
-	std::cerr << "ERROR: Entry for " + cid + " not found!" << std::endl;
+void search_error(std::string cid, std::string tkt_file_name) {
+	std::cerr << "ERROR: Entry for " + cid + " not found in " << tkt_file_name << std::endl;
 	std::exit(EXIT_FAILURE);
 }
 

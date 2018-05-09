@@ -1,5 +1,5 @@
 /*
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -40,7 +40,7 @@ void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer);
 void argument_error();
 void file_size_error();
 void file_error(std::string file_name);
-void search_error(std::string cid);
+void search_error(std::string cid, std::string tkt_file_name);
 
 void display_help();
 

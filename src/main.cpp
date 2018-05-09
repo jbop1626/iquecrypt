@@ -2,7 +2,7 @@
 	iQueCrypt v0.1.0
 	iQue Player content decrypter and key extractor.
 
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -27,7 +27,8 @@
 const std::string ver = "0.1.0";
 
 int main(int argc, char * argv[]) {
-	std::cout << "iQueCrypt v" << ver << " Copyright © 2018 Jbop (https://github.com/jbop1626)" << std::endl;
+	std::cout << std::endl << "iQueCrypt v" << ver << std::endl;
+	std::cout << "Copyright 2018 Jbop (https://github.com/jbop1626)" << std::endl << std::endl;
 	if (argc < 2) {
 		argument_error();
 	}
