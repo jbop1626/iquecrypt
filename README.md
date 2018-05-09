@@ -4,7 +4,7 @@ This is a tool for extracting the available encryption keys and initialization v
 
 Given the correct keys and initialization vectors, it can also be used to decrypt content from the iQue encrypted using AES CBC.  
 
-More functionality (including decryption of twice-encrypted title keys and .rec files) will hopefully be possible, and subsequently added, soon.  
+More functionality (including decryption of twice-encrypted title keys and .rec files) will be added soon.  
 
 See [USAGE.md](/USAGE.md) for more information.  
 

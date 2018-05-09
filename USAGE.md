@@ -26,8 +26,8 @@ Parameters:
 		-fiv	initialization vector input from file  
 		
 Example:  
-		iquecrypt -app 98967F.app -fkey title_key.bin -iv 123456789ABCDEF10111213141516171  
-		Output: [dec]98967F.app in same directory  
+		iquecrypt -app 0098967F.app -fkey title_key.bin -iv 123456789ABCDEF10111213141516171  
+		Output: [dec]0098967F.app in same directory  
 ````
 		
 #### extract  
