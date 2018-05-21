@@ -1,5 +1,5 @@
 /*
-	Copyright 2018 Jbop (https://github.com/jbop1626)
+	Copyright © 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -26,12 +26,21 @@
 #include "iquecrypt.hpp"
 #include "aes/aes.hpp"
 
-void ique_decrypt(char * argv[]) {
+void ique_crypt(char * argv[], int argc) {
 	if (std::string(argv[2]) == "-app") {
-		aes_decrypt_file(argv[3], false, 0, argv[4], argv[5], argv[6], argv[7]);
+		struct crypt_args a = {"", "", "", "", "", ""};
+		parse_args(a, argv, argc);
+		aes_crypt(a.mode, a.in_fn, false, 0, a.key_par, a.key_in, a.iv_par, a.iv_in);
 	}
 	else if (std::string(argv[2]) == "-tk") {
-		aes_decrypt_file(argv[3], true, 16, argv[4], argv[5], argv[6], argv[7]);
+		struct crypt_args a = { "", "", "", "", "", "" };
+		parse_args(a, argv, argc);
+		aes_crypt(a.mode, a.in_fn, true, 16, a.key_par, a.key_in, a.iv_par, a.iv_in);
+	}
+	else if (std::string(argv[2]) == "-rec") {
+		struct rec_args a = {"", "", "", "", "", "", ""};
+		parse_args(a, argv, argc);
+		rec_crypt(a.mode, a.rc_fn, a.v2_fn, a.iv_par, a.iv_in, a.rs_fn, a.cid);
 	}
 	else {
 		argument_error();
@@ -39,18 +48,22 @@ void ique_decrypt(char * argv[]) {
 }
 
 void ique_extract(char * argv[], int argc) {
-	if (std::string(argv[2]) == "-cmd" && argc == 4) {
-		extract_cmd(argv[3]);
+	if (std::string(argv[2]) == "-cmd") {
+		struct extract_args a;
+		parse_args(a, argv, argc);
+		extract_cmd(a.in_fn);
 	}
-	else if (std::string(argv[2]) == "-ticket" && argc == 6) {
-		extract_ticket(argv[3], argv[5]);
+	else if (std::string(argv[2]) == "-ticket") {
+		struct extract_args a;
+		parse_args(a, argv, argc);
+		extract_ticket(a.in_fn, a.cid);
 	}
 	else {
 		argument_error();
 	}
 }
 
-void aes_decrypt_file(std::string file_name, bool length_known, int file_length,
+void aes_crypt(std::string mode, std::string file_name, bool length_known, int file_length,
 	std::string k_par, std::string k_input, std::string iv_par, std::string iv_input) {
 
 	uint8_t * file_buffer = read_file(file_name, length_known, file_length);
@@ -64,13 +77,129 @@ void aes_decrypt_file(std::string file_name, bool length_known, int file_length,
 	uint8_t iv[16];
 	read_aes_keyiv(iv_par, iv_input, iv);
 
-	std::cout << "Decrypting..." << std::endl;
+	std::string prefix;
 	struct AES_ctx ctx;
 	AES_init_ctx_iv(&ctx, key, iv);
-	AES_CBC_decrypt_buffer(&ctx, file_buffer, file_length);
-	write_file("[dec]" + file_name, file_buffer, file_length);
+	if (mode == "decrypt") {
+		std::cout << "Decrypting..." << std::endl;
+		AES_CBC_decrypt_buffer(&ctx, file_buffer, file_length);
+		std::cout << "Decryption complete!" << std::endl;
+		prefix = "[dec]";
+	}
+	else if (mode == "encrypt") {
+		std::cout << "Encrypting..." << std::endl;
+		AES_CBC_encrypt_buffer(&ctx, file_buffer, file_length);
+		std::cout << "Encryption complete!" << std::endl;
+		prefix = "[enc]";
+	}
+	else {
+		argument_error();
+	}
+	write_file(prefix + file_name, file_buffer, file_length);
 	delete[] file_buffer;
-	std::cout << "Decryption complete!" << std::endl;
+}
+
+void rec_crypt(std::string mode, std::string rec_file_name, std::string v2_file_name,
+	std::string iv_par, std::string iv_input, std::string rsys_file_name, std::string content_id) {
+	int rec_size = 0;
+	uint8_t * rec = read_file(rec_file_name, false, rec_size);
+	if (rec_size % 16 != 0) {
+		std::cerr << "The size of the input file to be encrypted/decrypted is not a multiple of 16.";
+		std::cerr << "Try padding the file and re-running the program." << std::endl << std::endl;
+		file_size_error();
+	}
+
+	int v2_size = 256;
+	uint8_t * v2 = read_file(v2_file_name, true, v2_size);
+
+	int rsys_size = 0;
+	uint8_t * recrypt_sys = read_file(rsys_file_name, false, rsys_size);
+
+	uint8_t content_iv[16];
+	read_aes_keyiv(iv_par, iv_input, content_iv);
+
+	uint8_t cid[4];
+	int m = 0;
+	for (int n = 0; n <= 6; n += 2) {
+		cid[m] = std::stoi(content_id.substr(n, 2), nullptr, 16);
+		m++;
+	}
+
+	// This method of generating the recrypt list iv from the BB ID *should*
+	// work for any underlying byte ordering. ("should"...)
+	int ovrflw[3] = { 0 };
+	if (v2[0x97] > 0xFB) {
+		for (int z = 0; z < (v2[0x97] - 0xFC); ++z) {
+			ovrflw[z] = 1;
+		}
+	}
+	uint8_t recrypt_list_iv[16] = { v2[0x94], v2[0x95], v2[0x96], v2[0x97],
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
+
+	uint8_t recrypt_list_key[16];
+	std::memcpy(recrypt_list_key, &v2[0xC8], 16);
+	delete[] v2;
+
+	int entries_count = recrypt_sys[0x43]; // seems like the best way to deal with endianness problems
+	std::cout << "Searching recrypt.sys entries (" << entries_count << " total)..." << std::endl;
+	uint8_t reckey[16] = { 0 };
+	bool entry_not_found = true;
+	uint8_t * entry = recrypt_sys + 0x44;
+	for (int i = 0; i < entries_count; ++i) {
+		uint8_t tmp[32] = { 0 };
+		std::memcpy(tmp, entry, 32);
+		struct AES_ctx ctx;
+		AES_init_ctx_iv(&ctx, recrypt_list_key, (uint8_t *)recrypt_list_iv);
+		AES_CBC_decrypt_buffer(&ctx, tmp, 32);
+
+		std::stringstream ss;
+		for (int g = 0; g < 4; ++g) {
+			ss << std::setw(2) << std::setfill('0') << std::hex << (int)tmp[g];
+		}
+		std::cout << "Entry #" << i+1 << ": " << ss.str() << ", Query: " << content_id << std::endl;
+
+		if (std::memcmp(tmp, cid, 4) == 0) {
+			std::cout << "Entry found!" << std::endl;
+			uint8_t * ptr = &tmp[4];
+			std::memcpy(reckey, ptr, 16);
+			entry_not_found = false;
+			std::cout << "Key read." << std::endl;
+			break;
+		}
+		else {
+			entry += 0x20;
+		}
+	}
+	delete[] recrypt_sys;
+	if (entry_not_found) {
+		search_error(content_id, rsys_file_name);
+	}
+
+	std::cout << "Recrypt key for " << content_id << ": ";
+	for (int r = 0; r < 16; ++r) {
+		std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)reckey[r];
+	}
+	std::cout << std::endl;
+
+	struct AES_ctx ctx;
+	AES_init_ctx_iv(&ctx, reckey, content_iv);
+	if (mode == "decrypt") {
+		std::cout << "Decrypting..." << std::endl;
+		AES_CBC_decrypt_buffer(&ctx, rec, rec_size);
+	}
+	else if (mode == "encrypt") {
+		std::cout << "Encrypting..." << std::endl;
+		AES_CBC_encrypt_buffer(&ctx, rec, rec_size);
+	}
+	else {
+		argument_error();
+	}
+	std::cout << "Writing output..." << std::endl;
+	write_file("output.bin", rec, rec_size);
+	std::cout << "Complete!" << std::endl;
+	delete[] rec;
 }
 
 void extract_cmd(std::string cmd_file_name) {
@@ -99,8 +228,8 @@ void extract_cmd(std::string cmd_file_name) {
 		ss << std::setw(2) << std::setfill('0') << std::hex << (int)content_id[i];
 	}
 	std::string cid_str = ss.str();
-	for (int s = 0; s < cid_str.length(); ++s) {
-		cid_str[s] = tolower(cid_str[s]);
+	for (char & s : cid_str) {
+		s = tolower(s);
 	}
 
 	std::cout << "Extracting files from cmd..." << std::endl;
@@ -119,8 +248,8 @@ void extract_ticket(std::string tkt_file_name, std::string content_id) {
 		std::cerr << "The provided content id is invalid." << std::endl << "Make sure it is in hexadecimal with all 8 digits." << std::endl << std::endl;
 		argument_error();
 	}
-	for (int s = 0; s < content_id.length(); ++s) {
-		content_id[s] = tolower(content_id[s]);
+	for (char & s : content_id) {
+		s = tolower(s);
 	}
 
 	int tkt_file_length = 0;
@@ -225,6 +354,87 @@ void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer) {
 	}
 }
 
+void parse_args(struct rec_args & a, char * argv[], int argc) {
+	a.mode = argv[1];
+	bool rc = false;
+	bool v2 = false;
+	bool iv = false;
+	bool rs = false;
+	bool ci = false;
+	for (int i = 0; i < argc - 1; ++i) {
+		std::string arg = argv[i];
+		if (arg == "-rec") {
+			a.rc_fn = argv[i + 1];
+			rc = true;
+		}
+		else if (arg == "-v2") {
+			a.v2_fn = argv[i + 1];
+			v2 = true;
+		}
+		else if (arg == "-iv" || arg == "-fiv") {
+			a.iv_par = argv[i];
+			a.iv_in = argv[i + 1];
+			iv = true;
+		}
+		else if (arg == "-rsys") {
+			a.rs_fn = argv[i + 1];
+			rs = true;
+		}
+		else if (arg == "-cid") {
+			a.cid = argv[i + 1];
+			ci = true;
+		}
+	}
+	if (!(rc && v2 && iv && rs && ci)) argument_error();
+}
+
+void parse_args(struct crypt_args & a, char * argv[], int argc) {
+	a.mode = argv[1];
+	bool in = false;
+	bool key = false;
+	bool iv = false;
+	for (int i = 0; i < argc - 1; ++i) {
+		std::string arg = argv[i];
+		if (arg == "-app" || arg == "-tk") {
+			a.in_fn = argv[i + 1];
+			in = true;
+		}
+		else if (arg == "-key" || arg == "-fkey") {
+			a.key_par = argv[i];
+			a.key_in = argv[i + 1];
+			key = true;
+		}
+		else if (arg == "-iv" || arg == "-fiv") {
+			a.iv_par = argv[i];
+			a.iv_in = argv[i + 1];
+			iv = true;
+		}
+	}
+	if (!(in && key && iv)) argument_error();
+}
+
+void parse_args(struct extract_args & a, char * argv[], int argc) {
+	bool in = false;
+	bool ci = false;
+	bool ticket = false;
+	for (int i = 0; i < argc - 1; ++i) {
+		std::string arg = argv[i];
+		if (arg == "-cmd" || arg == "-ticket") {
+			a.in_fn = argv[i + 1];
+			in = true;
+			if (arg == "-ticket") ticket = true;
+		}
+		else if (arg == "-cid") {
+			a.cid = argv[i + 1];
+			ci = true;
+		}
+	}
+	if (!in || (ticket && !ci)) {
+		std::cerr << "Ticket extract requested, but no content ID was provided." << std::endl << std::endl;
+		argument_error();
+	}
+}
+
 void argument_error() {
 	std::cerr << "ERROR: Invalid arguments." << std::endl << "Run iquecrypt with -h or --help for usage help and other info." << std::endl;
 	std::exit(EXIT_FAILURE);
@@ -240,8 +450,8 @@ void file_error(std::string file_name) {
 	std::exit(EXIT_FAILURE);
 }
 
-void search_error(std::string cid, std::string tkt_file_name) {
-	std::cerr << "ERROR: Entry for " + cid + " not found in " << tkt_file_name << std::endl;
+void search_error(std::string query, std::string search_file_name) {
+	std::cerr << "ERROR: Entry for " + query + " not found in " << search_file_name << std::endl;
 	std::exit(EXIT_FAILURE);
 }
 
