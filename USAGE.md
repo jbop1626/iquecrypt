@@ -2,7 +2,7 @@
 
 iquecrypt [mode]  
 
-Possible modes: decrypt / encrypt /extract  
+Possible modes: decrypt / encrypt / extract  
 
 #### decrypt  
 
