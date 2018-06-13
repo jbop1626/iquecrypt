@@ -1,5 +1,5 @@
 /*
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright Â© 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -330,7 +330,7 @@ void extract_v2(std::string file_name) {
 	}
 
 
-	// Extract SK hash
+	// Extract SK hash?
 	char temp;
 	uint8_t * pointer = v2;
 	std::cout << "Extract the secure kernel SHA-1 hash? (y/n): ";
@@ -340,7 +340,7 @@ void extract_v2(std::string file_name) {
 		write_file(bbid_str + "_SK_hash.bin", pointer, 20);
 	}
 
-	// Extract ROM patch? TODO
+	// Extract ROM patch?
 	pointer += 20;
 	std::cout << "Extract rom patch? (y/n): ";
 	std::cin.get(temp);
