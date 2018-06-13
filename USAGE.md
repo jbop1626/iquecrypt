@@ -113,7 +113,9 @@ Examples:
 
 #### ecdh  
 
-Generates the ECDH-derived AES key (aka the "titlekek") used to re-encrypt the title key in a ticket entry. This requires the console's ECC private key and the ECC public key to be provided in separate files, which can be obtained using commands described above. Decrypting a twice-encrypted title key (e.g. using the decrypt mode with "-tk" passed) from a ticket with this key and the title key iv 2 from the ticket, and then decrypting *again* with the iQue common key and the title key iv from the cmd/ticket, will result in a app's plaintext title key.  
+Generates the ECDH-derived AES key (aka the "titlekek") used to re-encrypt the title key in a ticket entry. This requires the console's ECC private key and the ECC public key to be provided in separate files, which can be obtained using commands described above.  
+
+Decrypting a twice-encrypted title key (e.g. using the decrypt mode with "-tk" passed) from a ticket with this key and the title key iv 2 from the ticket, and then decrypting *again* with the iQue common key and the title key iv from the cmd/ticket, will result in a app's plaintext title key.  
 
 ````
 Usage:  
