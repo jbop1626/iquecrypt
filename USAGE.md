@@ -2,7 +2,7 @@
 
 iquecrypt [mode]  
 
-Possible modes: decrypt / encrypt / extract  
+Possible modes: decrypt / encrypt / extract / ecdh   
 
 #### decrypt  
 
@@ -78,21 +78,25 @@ Example:
 		
 #### extract  
 
-Extracts information from a content metadata file, or from a certain entry in a ticket.sys file.  
+Extracts information from a content metadata file, from a certain entry in a ticket.sys file, or from a Virage2 dump.  
 
 If given a .cmd file, the encrypted title key, title key iv, and content iv will be extracted into the current directory.  
 
 If a ticket.sys file is provided, it will also extract into the current directory the second title key iv and ECC public key contained in the ticket head.  
 
+If given a Virage2 dump, the user will be prompted to choose (y/n) if they want to extract each of the various pieces of data it contains.  
+
 ````
 Usage:  
 		extract -cmd [cmd file]  
 		extract -ticket [ticket file] -cid [content ID]  
+		extract -v2 [virage2 dump]  
 		
 Parameters:  
 		-cmd	.cmd file input  
 		-ticket ticket file input (e.g. ticket.sys)  
 		-cid	content ID (in hexadecimal) of requested entry in ticket.sys  
+		-v2	Virage2 dump file input  
 		
 Examples:  
 		iquecrypt extract -cmd 0098967F.cmd  
@@ -101,5 +105,26 @@ Examples:
 			   
 		iquecrypt extract -ticket my_tickets -cid 0098967F  
 		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin,  
-		        [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.
+		        [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.  
+				
+		iquecrypt extract -v2 v2.bin  
+		Output: Depends on user input.  
 ````
+
+#### ecdh  
+
+Generates the ECDH-derived AES key (aka the "titlekek") used to re-encrypt the title key in a ticket entry. This requires the console's ECC private key and the ECC public key to be provided in separate files, which can be obtained using commands described above.  
+
+````
+Usage:  
+		ecdh -pvt [ECC priv key file] -pub [ECC pub key file]
+		
+Parameters:
+		-pvt	ECC private key file input
+		-pub	ECC public key file input
+
+Example:
+		iquecrypt ecdh -pvt 0B0E0E0F_ecc_private_key.bin -pub 0098967F_ecc_public_key.bin
+		Output: ecdh_key.bin in same directory.
+````
+  
