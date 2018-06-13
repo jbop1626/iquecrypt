@@ -35,6 +35,7 @@ struct rec_args {
 };
 
 struct crypt_args {
+	int type;
 	std::string mode;
 	std::string in_fn;
 	std::string key_par;
@@ -44,23 +45,33 @@ struct crypt_args {
 };
 
 struct extract_args {
+	int type;
 	std::string in_fn;
 	std::string cid;
 };
 
-void parse_args(struct rec_args & a, char * argv[], int argc);
-void parse_args(struct crypt_args & a, char * argv[], int argc);
-void parse_args(struct extract_args & a, char * argv[], int argc);
+struct ecdh_args {
+	std::string pvt;
+	std::string pub;
+};
+
+void parse_args(rec_args & a, char * argv[], int argc);
+void parse_args(crypt_args & a, char * argv[], int argc);
+void parse_args(extract_args & a, char * argv[], int argc);
+void parse_args(ecdh_args & a, char * argv[], int argc);
 
 void ique_crypt(char * argv[], int argc);
 void ique_extract(char * argv[], int argc);
+void ique_ecdh(char * argv[], int argc);
 
 void aes_crypt(std::string mode, std::string file_name, bool length_known, int file_length,
 	std::string k_par, std::string k_input, std::string iv_par, std::string iv_input);
-void extract_cmd(std::string cmd_file_name);
-void extract_ticket(std::string tkt_file_name, std::string content_id);
 void rec_crypt(std::string mode, std::string rec_file_name, std::string v2_file_name,
 	std::string iv_par, std::string iv_input, std::string rsys_file_name, std::string content_id);
+void extract_cmd(std::string cmd_file_name);
+void extract_ticket(std::string tkt_file_name, std::string content_id);
+void extract_v2(std::string file_name);
+void generate_ecdh_key(std::string pvt_key_name, std::string pub_key_name);
 
 uint8_t * read_file(std::string in_file_name, bool length_known, int & expected_length);
 void write_file(std::string out_file_name, uint8_t * buffer, int file_length);

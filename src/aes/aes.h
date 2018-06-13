@@ -15,11 +15,11 @@
 #endif
 
 #ifndef ECB
-  #define ECB 1
+  #define ECB 0
 #endif
 
 #ifndef CTR
-  #define CTR 1
+  #define CTR 0
 #endif
 
 

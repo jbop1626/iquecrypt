@@ -1,5 +1,5 @@
 /*
-	Copyright Â© 2018 Jbop (https://github.com/jbop1626)
+	Copyright © 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -23,22 +23,27 @@
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include <limits>
 #include "iquecrypt.hpp"
 #include "aes/aes.hpp"
+#include "ecc/ecc.hpp"
 
 void ique_crypt(char * argv[], int argc) {
-	if (std::string(argv[2]) == "-app") {
-		struct crypt_args a = {"", "", "", "", "", ""};
+	if (std::string(argv[2]) == "-app" || std::string(argv[2]) == "-tk") {
+		crypt_args a;
 		parse_args(a, argv, argc);
-		aes_crypt(a.mode, a.in_fn, false, 0, a.key_par, a.key_in, a.iv_par, a.iv_in);
-	}
-	else if (std::string(argv[2]) == "-tk") {
-		struct crypt_args a = { "", "", "", "", "", "" };
-		parse_args(a, argv, argc);
-		aes_crypt(a.mode, a.in_fn, true, 16, a.key_par, a.key_in, a.iv_par, a.iv_in);
+		if (a.type == 0) {
+			aes_crypt(a.mode, a.in_fn, false, 0, a.key_par, a.key_in, a.iv_par, a.iv_in);
+		}
+		else if (a.type == 1) {
+			aes_crypt(a.mode, a.in_fn, true, 16, a.key_par, a.key_in, a.iv_par, a.iv_in);
+		}
+		else {
+			argument_error();
+		}
 	}
 	else if (std::string(argv[2]) == "-rec") {
-		struct rec_args a = {"", "", "", "", "", "", ""};
+		rec_args a;
 		parse_args(a, argv, argc);
 		rec_crypt(a.mode, a.rc_fn, a.v2_fn, a.iv_par, a.iv_in, a.rs_fn, a.cid);
 	}
@@ -48,19 +53,26 @@ void ique_crypt(char * argv[], int argc) {
 }
 
 void ique_extract(char * argv[], int argc) {
-	if (std::string(argv[2]) == "-cmd") {
-		struct extract_args a;
-		parse_args(a, argv, argc);
+	extract_args a;
+	parse_args(a, argv, argc);
+	if (a.type == 0) {
 		extract_cmd(a.in_fn);
 	}
-	else if (std::string(argv[2]) == "-ticket") {
-		struct extract_args a;
-		parse_args(a, argv, argc);
+	else if (a.type == 1) {
 		extract_ticket(a.in_fn, a.cid);
+	}
+	else if (a.type == 2) {
+		extract_v2(a.in_fn);
 	}
 	else {
 		argument_error();
 	}
+}
+
+void ique_ecdh(char * argv[], int argc) {
+	ecdh_args a;
+	parse_args(a, argv, argc);
+	generate_ecdh_key(a.pvt, a.pub);
 }
 
 void aes_crypt(std::string mode, std::string file_name, bool length_known, int file_length,
@@ -134,9 +146,9 @@ void rec_crypt(std::string mode, std::string rec_file_name, std::string v2_file_
 		}
 	}
 	uint8_t recrypt_list_iv[16] = { v2[0x94], v2[0x95], v2[0x96], v2[0x97],
-					v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
-					v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
-					v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
 
 	uint8_t recrypt_list_key[16];
 	std::memcpy(recrypt_list_key, &v2[0xC8], 16);
@@ -302,6 +314,142 @@ void extract_ticket(std::string tkt_file_name, std::string content_id) {
 	std::cout << "Extraction from ticket complete!" << std::endl;
 }
 
+void extract_v2(std::string file_name) {
+	int v2_length = 256;
+	uint8_t * v2 = read_file(file_name, true, v2_length);
+
+	uint8_t BBID[4] = { 0 };
+	std::memcpy(BBID, v2 + 0x94, 4);
+	std::stringstream ss;
+	for (int i = 0; i < 4; ++i) {
+		ss << std::setw(2) << std::setfill('0') << std::hex << (int)BBID[i];
+	}
+	std::string bbid_str = ss.str();
+	for (char & s : bbid_str) {
+		s = tolower(s);
+	}
+
+
+	// Extract SK hash
+	char temp;
+	uint8_t * pointer = v2;
+	std::cout << "Extract the secure kernel SHA-1 hash? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_SK_hash.bin", pointer, 20);
+	}
+
+	// Extract ROM patch? TODO
+	pointer += 20;
+	std::cout << "Extract rom patch? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_ROM_patch.bin", pointer, 64);
+	}
+
+	// Extract ECC pub key?
+	pointer += 64;
+	std::cout << "Extract the console's ECC public key? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_ECC_public_key.bin", pointer, 64);
+	}
+
+	// Extract BBID?
+	pointer += 64;
+	std::cout << "Extract the console's identification number? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_BBID.bin", pointer, 4);
+	}
+
+	// Extract ECC priv key?
+	pointer += 4;
+	std::cout << "Extract the console's ECC private key? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_ECC_private_key.bin", pointer, 32);
+	}
+
+	// Extract common key?
+	pointer += 32;
+	std::cout << "Extract the iQue common key? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file("ique_common_key.bin", pointer, 16);
+	}
+
+	// Extract recrypt list key?
+	pointer += 16;
+	std::cout << "Extract the console's recrypt list key? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_recrypt_list_key.bin", pointer, 16);
+	}
+
+	// Extract key #1?
+	pointer += 16;
+	std::cout << "Extract the console's 1st unused key (appstate)? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_appstate_key.bin", pointer, 16);
+	}
+
+	// Extract key #2?
+	pointer += 16;
+	std::cout << "Extract the console's 2md unused key (selfmsg)? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_selfmsg_key.bin", pointer, 16);
+	}
+
+	// Extract checksum just because?
+	pointer += 16;
+	std::cout << "Extract the Virage2 checksum for some reason? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		write_file(bbid_str + "_v2_checksum.bin", pointer, 4);
+	}
+
+	// Extract the JTAG enable field because you have nothing else to do?
+	pointer += 4;
+	std::cout << "Extract the JTAG enabler for some reason? (y/n): ";
+	std::cin.get(temp);
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	if (tolower(temp) == 'y') {
+		std::cout << "Why??" << std::endl;
+		write_file(bbid_str + "_JTAG_enable.bin", pointer, 4);
+	}
+}
+
+void generate_ecdh_key(std::string pvt_key_name, std::string pub_key_name) {
+	int pvt_key_length = 32;
+	int pub_key_length = 64;
+	uint8_t output[16] = { 0 };
+	uint8_t * private_key = read_file(pvt_key_name, true, pvt_key_length);
+	uint8_t * public_key = read_file(pub_key_name, true, pub_key_length);
+	ecdh(private_key, public_key, output);
+	delete[] private_key;
+	delete[] public_key;
+	write_file("ecdh_key.bin", output, 16);
+	std::cout << "The ECDH-derived key has been generated and written to ecdh_key.bin." << std::endl;
+	std::cout << "The generated key is: ";
+	for (int i = 0; i < 16; ++i) {
+		std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)output[i];
+	}
+	std::cout << std::endl;
+}
+
 uint8_t * read_file(std::string in_file_name, bool length_known, int & expected_length) {
 	std::ifstream fin;
 	fin.open(in_file_name, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
@@ -354,7 +502,7 @@ void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer) {
 	}
 }
 
-void parse_args(struct rec_args & a, char * argv[], int argc) {
+void parse_args(rec_args & a, char * argv[], int argc) {
 	a.mode = argv[1];
 	bool rc = false;
 	bool v2 = false;
@@ -388,7 +536,8 @@ void parse_args(struct rec_args & a, char * argv[], int argc) {
 	if (!(rc && v2 && iv && rs && ci)) argument_error();
 }
 
-void parse_args(struct crypt_args & a, char * argv[], int argc) {
+void parse_args(crypt_args & a, char * argv[], int argc) {
+	a.type = -1;
 	a.mode = argv[1];
 	bool in = false;
 	bool key = false;
@@ -398,6 +547,8 @@ void parse_args(struct crypt_args & a, char * argv[], int argc) {
 		if (arg == "-app" || arg == "-tk") {
 			a.in_fn = argv[i + 1];
 			in = true;
+			if (arg == "-app") a.type = 0;
+			if (arg == "-tk") a.type = 1;
 		}
 		else if (arg == "-key" || arg == "-fkey") {
 			a.key_par = argv[i];
@@ -413,16 +564,26 @@ void parse_args(struct crypt_args & a, char * argv[], int argc) {
 	if (!(in && key && iv)) argument_error();
 }
 
-void parse_args(struct extract_args & a, char * argv[], int argc) {
+void parse_args(extract_args & a, char * argv[], int argc) {
+	a.type = -1;
 	bool in = false;
 	bool ci = false;
 	bool ticket = false;
+	bool v2 = false;
 	for (int i = 0; i < argc - 1; ++i) {
 		std::string arg = argv[i];
-		if (arg == "-cmd" || arg == "-ticket") {
+		if (arg == "-cmd" || arg == "-ticket" || arg == "-v2") {
 			a.in_fn = argv[i + 1];
 			in = true;
-			if (arg == "-ticket") ticket = true;
+			if (arg == "-cmd") a.type = 0;
+			if (arg == "-ticket") {
+				a.type = 1;
+				ticket = true;
+			}
+			if (arg == "-v2") {
+				a.type = 2;
+				v2 = true;
+			}
 		}
 		else if (arg == "-cid") {
 			a.cid = argv[i + 1];
@@ -430,9 +591,28 @@ void parse_args(struct extract_args & a, char * argv[], int argc) {
 		}
 	}
 	if (!in || (ticket && !ci)) {
-		std::cerr << "Ticket extract requested, but no content ID was provided." << std::endl << std::endl;
+		if (ticket && !ci) {
+			std::cerr << "Ticket extract requested, but no content ID was provided." << std::endl << std::endl;
+		}
 		argument_error();
 	}
+}
+
+void parse_args(ecdh_args & a, char * argv[], int argc) {
+	bool pvt = false;
+	bool pub = false;
+	for (int i = 0; i < argc - 1; ++i) {
+		std::string arg = argv[i];
+		if (arg == "-pvt") {
+			a.pvt = argv[i + 1];
+			pvt = true;
+		}
+		if (arg == "-pub") {
+			a.pub = argv[i + 1];
+			pub = true;
+		}
+	}
+	if (!(pvt && pub)) argument_error();
 }
 
 void argument_error() {
@@ -458,3 +638,4 @@ void search_error(std::string query, std::string search_file_name) {
 void display_help() {
 	std::cout << "Please use the usage manual for now..." << std::endl;
 }
+

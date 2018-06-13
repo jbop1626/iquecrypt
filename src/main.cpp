@@ -1,5 +1,5 @@
 /*
-	iQueCrypt v0.1.0
+	iQueCrypt v1.1.0
 	iQue Player content decrypter and key extractor.
 
 	Copyright © 2018 Jbop (https://github.com/jbop1626)
@@ -24,7 +24,7 @@
 #include <string>
 #include "iquecrypt.hpp"
 
-const std::string ver = "1.0.0";
+const std::string ver = "1.1.0";
 
 int main(int argc, char * argv[]) {
 	std::cout << std::endl << "iQueCrypt v" << ver << std::endl;
@@ -37,6 +37,9 @@ int main(int argc, char * argv[]) {
 	}
 	else if (std::string(argv[1]) == "extract") {
 		ique_extract(argv, argc);
+	}
+	else if (std::string(argv[1]) == "ecdh") {
+		ique_ecdh(argv, argc);
 	}
 	else if (std::string(argv[1]) == "-h" || std::string(argv[1]) == "--help") {
 		display_help();
