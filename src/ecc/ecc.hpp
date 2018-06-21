@@ -2,7 +2,7 @@
 	ecc.hpp - definitions required for ECC operations using keys
 			  defined with sect233r1 / NIST B-233
 	
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright Â© 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -35,7 +35,7 @@ const element poly_f = 		{0x0200, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 const element poly_r = 		{0x0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000400, 0x00000000, 0x00000001};
 const element a_coeff =		{0x0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001}; /*
 const element b_coeff =		{0x0066, 0x647EDE6C, 0x332C7F8C, 0x0923BB58, 0x213B333B, 0x20E9CE42, 0x81FE115F, 0x7D8F90AD};
-const element G_x =			{0x00FA, 0xC9DFCBAC, 0x8313BB21, 0x39F1BB75, 0x5FEF65BC, 0x391F8B36, 0xF8F8EB73, 0x71FD558B};
+const element G_x =		{0x00FA, 0xC9DFCBAC, 0x8313BB21, 0x39F1BB75, 0x5FEF65BC, 0x391F8B36, 0xF8F8EB73, 0x71FD558B};
 const element G_y = 		{0x0100, 0x6A08A419, 0x03350678, 0xE58528BE, 0xBF8A0BEF, 0xF867A7CA, 0x36716F7E, 0x01F81052};
 const element G_order = 	{0x0100, 0x00000000, 0x00000000, 0x00000000, 0x0013E974, 0xE72F8A69, 0x22031D26, 0x03CFE0D7};
 const uint32_t cofactor = 	0x02; */
