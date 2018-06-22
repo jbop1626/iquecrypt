@@ -1,3 +1,11 @@
+### v1.2.0 - 2018 06 22  
+
+* Passing in "-all" when extracting from a Virage2 dump will extract all info in one go.  
+
+* Arguments after the mode can be passed in any order.  
+
+* Re-organized everything  
+
 ### v1.1.0 - 2018 06 13  
 
 * The ability to extract keys and other info from a Virage2 dump was added.  

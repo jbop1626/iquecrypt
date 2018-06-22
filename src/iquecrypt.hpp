@@ -24,42 +24,6 @@
 
 #define CBC 1
 
-struct rec_args {
-	std::string mode;
-	std::string rc_fn;
-	std::string v2_fn;
-	std::string iv_par;
-	std::string iv_in;
-	std::string rs_fn;
-	std::string cid;
-};
-
-struct crypt_args {
-	int type;
-	std::string mode;
-	std::string in_fn;
-	std::string key_par;
-	std::string key_in;
-	std::string iv_par;
-	std::string iv_in;
-};
-
-struct extract_args {
-	int type;
-	std::string in_fn;
-	std::string cid;
-};
-
-struct ecdh_args {
-	std::string pvt;
-	std::string pub;
-};
-
-void parse_args(rec_args & a, char * argv[], int argc);
-void parse_args(crypt_args & a, char * argv[], int argc);
-void parse_args(extract_args & a, char * argv[], int argc);
-void parse_args(ecdh_args & a, char * argv[], int argc);
-
 void ique_crypt(char * argv[], int argc);
 void ique_extract(char * argv[], int argc);
 void ique_ecdh(char * argv[], int argc);
@@ -70,18 +34,7 @@ void rec_crypt(std::string mode, std::string rec_file_name, std::string v2_file_
 	std::string iv_par, std::string iv_input, std::string rsys_file_name, std::string content_id);
 void extract_cmd(std::string cmd_file_name);
 void extract_ticket(std::string tkt_file_name, std::string content_id);
-void extract_v2(std::string file_name);
+void extract_v2(std::string file_name, bool extract_all);
 void generate_ecdh_key(std::string pvt_key_name, std::string pub_key_name);
-
-uint8_t * read_file(std::string in_file_name, bool length_known, int & expected_length);
-void write_file(std::string out_file_name, uint8_t * buffer, int file_length);
-void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer);
-
-void argument_error();
-void file_size_error();
-void file_error(std::string file_name);
-void search_error(std::string query, std::string search_file_name);
-
-void display_help();
 
 #endif

@@ -8,6 +8,6 @@ It can also be used to make an "injection", where a game or program (possibly ho
 
 Given a console's ECC private key, and an ECC public key from a game's entry in ticket.sys, iQueCrypt can generate the ECDH-derived key which is used to re-encrypt title keys in tickets. With this key a user can obtain the title keys of all games on their console.  
 
-See [USAGE.md](/USAGE.md) for more information about the program, or [iQueBrew](http://www.iquebrew.org/) for more information about the console.  
+See [USAGE.md](/USAGE.md) for more information about the program, or [iQueBrew](http://www.iquebrew.org/) for more information about the console. The [iQueCrypt page](http://www.iquebrew.org/index.php?title=IQueCrypt) on iQueBrew may also have more information.  
 
 AES implementation is from [tiny-AES](https://github.com/kokke/tiny-AES-c) by [kokke](https://github.com/kokke)  

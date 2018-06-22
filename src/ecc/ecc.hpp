@@ -2,7 +2,7 @@
 	ecc.hpp - definitions required for ECC operations using keys
 			  defined with sect233r1 / NIST B-233
 	
-	Copyright Â© 2018 Jbop (https://github.com/jbop1626)
+	Copyright © 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 

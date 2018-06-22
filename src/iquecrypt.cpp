@@ -25,29 +25,40 @@
 #include <string>
 #include <limits>
 #include "iquecrypt.hpp"
+#include "args.hpp"
+#include "util.hpp"
 #include "aes/aes.hpp"
 #include "ecc/ecc.hpp"
 
+
+// Slower way to parse args than previous versions, but since iquecrypt
+// probably would not (and should not) be used to operate on mass batches
+// of files, it makes sense to sacrifice speed for better user experience.
 void ique_crypt(char * argv[], int argc) {
-	if (std::string(argv[2]) == "-app" || std::string(argv[2]) == "-tk") {
-		crypt_args a;
-		parse_args(a, argv, argc);
-		if (a.type == 0) {
-			aes_crypt(a.mode, a.in_fn, false, 0, a.key_par, a.key_in, a.iv_par, a.iv_in);
+	bool error = true;
+	for (int i = 0; i < argc; ++i) {
+		if (std::string(argv[i]) == "-app" || std::string(argv[i]) == "-tk") {
+			error = false;
+			crypt_args a;
+			parse_args(a, argv, argc);
+			if (a.type == 0) {
+				aes_crypt(a.mode, a.in_fn, false, 0, a.key_par, a.key_in, a.iv_par, a.iv_in);
+			}
+			else if (a.type == 1) {
+				aes_crypt(a.mode, a.in_fn, true, 16, a.key_par, a.key_in, a.iv_par, a.iv_in);
+			}
+			else {
+				argument_error();
+			}
 		}
-		else if (a.type == 1) {
-			aes_crypt(a.mode, a.in_fn, true, 16, a.key_par, a.key_in, a.iv_par, a.iv_in);
-		}
-		else {
-			argument_error();
+		if (std::string(argv[i]) == "-rec") {
+			error = false;
+			rec_args a;
+			parse_args(a, argv, argc);
+			rec_crypt(a.mode, a.rc_fn, a.v2_fn, a.iv_par, a.iv_in, a.rs_fn, a.cid);
 		}
 	}
-	else if (std::string(argv[2]) == "-rec") {
-		rec_args a;
-		parse_args(a, argv, argc);
-		rec_crypt(a.mode, a.rc_fn, a.v2_fn, a.iv_par, a.iv_in, a.rs_fn, a.cid);
-	}
-	else {
+	if(error) {
 		argument_error();
 	}
 }
@@ -62,7 +73,7 @@ void ique_extract(char * argv[], int argc) {
 		extract_ticket(a.in_fn, a.cid);
 	}
 	else if (a.type == 2) {
-		extract_v2(a.in_fn);
+		extract_v2(a.in_fn, a.all);
 	}
 	else {
 		argument_error();
@@ -75,6 +86,9 @@ void ique_ecdh(char * argv[], int argc) {
 	generate_ecdh_key(a.pvt, a.pub);
 }
 
+/*
+	Main iquecrypt operations
+*/
 void aes_crypt(std::string mode, std::string file_name, bool length_known, int file_length,
 	std::string k_par, std::string k_input, std::string iv_par, std::string iv_input) {
 
@@ -257,7 +271,8 @@ void extract_cmd(std::string cmd_file_name) {
 
 void extract_ticket(std::string tkt_file_name, std::string content_id) {
 	if (content_id.length() != 8) {
-		std::cerr << "The provided content id is invalid." << std::endl << "Make sure it is in hexadecimal with all 8 digits." << std::endl << std::endl;
+		std::cerr << "The provided content id is invalid." << std::endl;
+		std::cerr << "Make sure it is in hexadecimal with all 8 digits." << std::endl << std::endl;
 		argument_error();
 	}
 	for (char & s : content_id) {
@@ -314,7 +329,7 @@ void extract_ticket(std::string tkt_file_name, std::string content_id) {
 	std::cout << "Extraction from ticket complete!" << std::endl;
 }
 
-void extract_v2(std::string file_name) {
+void extract_v2(std::string file_name, bool extract_all) {
 	int v2_length = 256;
 	uint8_t * v2 = read_file(file_name, true, v2_length);
 
@@ -328,108 +343,165 @@ void extract_v2(std::string file_name) {
 	for (char & s : bbid_str) {
 		s = tolower(s);
 	}
-
-
+	
 	// Extract SK hash?
-	char temp;
 	uint8_t * pointer = v2;
-	std::cout << "Extract the secure kernel SHA-1 hash? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	char temp;
+	if (!extract_all) {
+		std::cout << "Extract the secure kernel SHA-1 hash? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_SK_hash.bin", pointer, 20);
+		}
+	}
+	else {
+		std::cout << "Extracting files form Virage2 dump..." << std::endl;
 		write_file(bbid_str + "_SK_hash.bin", pointer, 20);
 	}
 
 	// Extract ROM patch?
 	pointer += 20;
-	std::cout << "Extract rom patch? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract rom patch? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_ROM_patch.bin", pointer, 64);
+		}
+	}
+	else {
 		write_file(bbid_str + "_ROM_patch.bin", pointer, 64);
 	}
 
 	// Extract ECC pub key?
 	pointer += 64;
-	std::cout << "Extract the console's ECC public key? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
-		write_file(bbid_str + "_ECC_public_key.bin", pointer, 64);
+	if (!extract_all) {
+		std::cout << "Extract the console's ECC public key? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_ecc_public_key.bin", pointer, 64);
+		}
+	}
+	else {
+		write_file(bbid_str + "_ecc_public_key.bin", pointer, 64);
 	}
 
 	// Extract BBID?
 	pointer += 64;
-	std::cout << "Extract the console's identification number? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract the console's identification number? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_BBID.bin", pointer, 4);
+		}
+	}
+	else {
 		write_file(bbid_str + "_BBID.bin", pointer, 4);
 	}
 
 	// Extract ECC priv key?
 	pointer += 4;
-	std::cout << "Extract the console's ECC private key? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
-		write_file(bbid_str + "_ECC_private_key.bin", pointer, 32);
+	if (!extract_all) {
+		std::cout << "Extract the console's ECC private key? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_ecc_private_key.bin", pointer, 32);
+		}
+	}
+	else {
+		write_file(bbid_str + "_ecc_private_key.bin", pointer, 32);
 	}
 
 	// Extract common key?
 	pointer += 32;
-	std::cout << "Extract the iQue common key? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract the iQue common key? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file("ique_common_key.bin", pointer, 16);
+		}
+	}
+	else {
 		write_file("ique_common_key.bin", pointer, 16);
 	}
 
 	// Extract recrypt list key?
 	pointer += 16;
-	std::cout << "Extract the console's recrypt list key? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract the console's recrypt list key? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_recrypt_list_key.bin", pointer, 16);
+		}
+	}
+	else {
 		write_file(bbid_str + "_recrypt_list_key.bin", pointer, 16);
 	}
 
 	// Extract key #1?
 	pointer += 16;
-	std::cout << "Extract the console's 1st unused key (appstate)? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract the console's 1st unused key (appstate)? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_appstate_key.bin", pointer, 16);
+		}
+	}
+	else {
 		write_file(bbid_str + "_appstate_key.bin", pointer, 16);
 	}
 
 	// Extract key #2?
 	pointer += 16;
-	std::cout << "Extract the console's 2md unused key (selfmsg)? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract the console's 2nd unused key (selfmsg)? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_selfmsg_key.bin", pointer, 16);
+		}
+	}
+	else {
 		write_file(bbid_str + "_selfmsg_key.bin", pointer, 16);
 	}
 
 	// Extract checksum just because?
 	pointer += 16;
-	std::cout << "Extract the Virage2 checksum for some reason? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
+	if (!extract_all) {
+		std::cout << "Extract the Virage2 checksum for some reason? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			write_file(bbid_str + "_v2_checksum.bin", pointer, 4);
+		}
+	}
+	else {
 		write_file(bbid_str + "_v2_checksum.bin", pointer, 4);
 	}
 
 	// Extract the JTAG enable field because you have nothing else to do?
 	pointer += 4;
-	std::cout << "Extract the JTAG enabler for some reason? (y/n): ";
-	std::cin.get(temp);
-	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	if (tolower(temp) == 'y') {
-		std::cout << "Why??" << std::endl;
-		write_file(bbid_str + "_JTAG_enable.bin", pointer, 4);
+	if (!extract_all) {
+		std::cout << "Extract the JTAG enabler for some reason? (y/n): ";
+		std::cin.get(temp);
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (tolower(temp) == 'y') {
+			std::cout << "Why??" << std::endl;
+			write_file(bbid_str + "_JTAG_enable.bin", pointer, 4);
+		}
 	}
+	else {
+		write_file(bbid_str + "_JTAG_enable.bin", pointer, 4);
+		std::cout << "Extraction complete!" << std::endl;
+	}
+	delete[] v2;
 }
 
 void generate_ecdh_key(std::string pvt_key_name, std::string pub_key_name) {
@@ -449,193 +521,3 @@ void generate_ecdh_key(std::string pvt_key_name, std::string pub_key_name) {
 	}
 	std::cout << std::endl;
 }
-
-uint8_t * read_file(std::string in_file_name, bool length_known, int & expected_length) {
-	std::ifstream fin;
-	fin.open(in_file_name, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
-		if (!fin.is_open()) {
-		fin.clear();
-		file_error(in_file_name);
-	}
-	int file_length = fin.tellg();
-	if (length_known && (file_length != expected_length)) {
-		file_size_error();
-	}
-	expected_length = file_length;
-	fin.seekg(0, std::ios::beg);
-	uint8_t * buffer = new uint8_t[file_length];
-	fin.read((char *)buffer, file_length);
-	fin.clear();
-	fin.close();
-	return buffer;
-}
-
-void write_file(std::string out_file_name, uint8_t * buffer, int file_length) {
-	std::ofstream fout(out_file_name, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-	if (!fout.is_open()) {
-		std::cerr << "ERROR: Could not open file to write." << std::endl;
-		std::exit(EXIT_FAILURE);
-	}
-	fout.write((char *)buffer, file_length);
-	fout.close();
-}
-
-void read_aes_keyiv(std::string par, std::string input, uint8_t * key_buffer) {
-	if (par == "-key" || par == "-iv") {
-		if (input.length() != 32) {
-			file_size_error();
-		}
-		int j = 0;
-		for (int i = 0; i <= 30; i+=2) {
-			key_buffer[j] = std::stoi(input.substr(i, 2), nullptr, 16);;
-			j++;
-		}
-	}
-	else if (par == "-fkey" || par == "-fiv") {
-		int key_length = 16;
-		uint8_t * tmp = read_file(input, true, key_length);
-		std::memcpy(key_buffer, tmp, 16);
-		delete[] tmp;
-	}
-	else {
-		argument_error();
-	}
-}
-
-void parse_args(rec_args & a, char * argv[], int argc) {
-	a.mode = argv[1];
-	bool rc = false;
-	bool v2 = false;
-	bool iv = false;
-	bool rs = false;
-	bool ci = false;
-	for (int i = 0; i < argc - 1; ++i) {
-		std::string arg = argv[i];
-		if (arg == "-rec") {
-			a.rc_fn = argv[i + 1];
-			rc = true;
-		}
-		else if (arg == "-v2") {
-			a.v2_fn = argv[i + 1];
-			v2 = true;
-		}
-		else if (arg == "-iv" || arg == "-fiv") {
-			a.iv_par = argv[i];
-			a.iv_in = argv[i + 1];
-			iv = true;
-		}
-		else if (arg == "-rsys") {
-			a.rs_fn = argv[i + 1];
-			rs = true;
-		}
-		else if (arg == "-cid") {
-			a.cid = argv[i + 1];
-			ci = true;
-		}
-	}
-	if (!(rc && v2 && iv && rs && ci)) argument_error();
-}
-
-void parse_args(crypt_args & a, char * argv[], int argc) {
-	a.type = -1;
-	a.mode = argv[1];
-	bool in = false;
-	bool key = false;
-	bool iv = false;
-	for (int i = 0; i < argc - 1; ++i) {
-		std::string arg = argv[i];
-		if (arg == "-app" || arg == "-tk") {
-			a.in_fn = argv[i + 1];
-			in = true;
-			if (arg == "-app") a.type = 0;
-			if (arg == "-tk") a.type = 1;
-		}
-		else if (arg == "-key" || arg == "-fkey") {
-			a.key_par = argv[i];
-			a.key_in = argv[i + 1];
-			key = true;
-		}
-		else if (arg == "-iv" || arg == "-fiv") {
-			a.iv_par = argv[i];
-			a.iv_in = argv[i + 1];
-			iv = true;
-		}
-	}
-	if (!(in && key && iv)) argument_error();
-}
-
-void parse_args(extract_args & a, char * argv[], int argc) {
-	a.type = -1;
-	bool in = false;
-	bool ci = false;
-	bool ticket = false;
-	bool v2 = false;
-	for (int i = 0; i < argc - 1; ++i) {
-		std::string arg = argv[i];
-		if (arg == "-cmd" || arg == "-ticket" || arg == "-v2") {
-			a.in_fn = argv[i + 1];
-			in = true;
-			if (arg == "-cmd") a.type = 0;
-			if (arg == "-ticket") {
-				a.type = 1;
-				ticket = true;
-			}
-			if (arg == "-v2") {
-				a.type = 2;
-				v2 = true;
-			}
-		}
-		else if (arg == "-cid") {
-			a.cid = argv[i + 1];
-			ci = true;
-		}
-	}
-	if (!in || (ticket && !ci)) {
-		if (ticket && !ci) {
-			std::cerr << "Ticket extract requested, but no content ID was provided." << std::endl << std::endl;
-		}
-		argument_error();
-	}
-}
-
-void parse_args(ecdh_args & a, char * argv[], int argc) {
-	bool pvt = false;
-	bool pub = false;
-	for (int i = 0; i < argc - 1; ++i) {
-		std::string arg = argv[i];
-		if (arg == "-pvt") {
-			a.pvt = argv[i + 1];
-			pvt = true;
-		}
-		if (arg == "-pub") {
-			a.pub = argv[i + 1];
-			pub = true;
-		}
-	}
-	if (!(pvt && pub)) argument_error();
-}
-
-void argument_error() {
-	std::cerr << "ERROR: Invalid arguments." << std::endl << "Run iquecrypt with -h or --help for usage help and other info." << std::endl;
-	std::exit(EXIT_FAILURE);
-}
-
-void file_size_error() {
-	std::cerr << "ERROR: An input has an invalid size. Read the usage manual for more information about accepted files and formats." << std::endl;
-	std::exit(EXIT_FAILURE);
-}
-
-void file_error(std::string file_name) {
-	std::cerr << "ERROR: Could not open " << file_name << std::endl;
-	std::exit(EXIT_FAILURE);
-}
-
-void search_error(std::string query, std::string search_file_name) {
-	std::cerr << "ERROR: Entry for " + query + " not found in " << search_file_name << std::endl;
-	std::exit(EXIT_FAILURE);
-}
-
-void display_help() {
-	std::cout << "Please use the usage manual for now..." << std::endl;
-}
-

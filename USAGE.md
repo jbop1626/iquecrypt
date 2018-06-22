@@ -84,13 +84,13 @@ If given a .cmd file, the encrypted title key, title key iv, and content iv will
 
 If a ticket.sys file is provided, it will also extract into the current directory the second title key iv and ECC public key contained in the ticket head.  
 
-If given a Virage2 dump, the user will be prompted to choose (y/n) if they want to extract each of the various pieces of data it contains.  
+If given a Virage2 dump, the user will be prompted to choose (y/n) if they want to extract each of the various pieces of data it contains. Or pass "-all" to extract everything at once.  
 
 ````
 Usage:  
 		extract -cmd [cmd file]  
 		extract -ticket [ticket file] -cid [content ID]  
-		extract -v2 [virage2 dump]  
+		extract -v2 [virage2 dump] (-all)  
 		
 Parameters:  
 		-cmd	.cmd file input  
