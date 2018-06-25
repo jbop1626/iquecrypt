@@ -160,9 +160,9 @@ void rec_crypt(std::string mode, std::string rec_file_name, std::string v2_file_
 		}
 	}
 	uint8_t recrypt_list_iv[16] = { v2[0x94], v2[0x95], v2[0x96], v2[0x97],
-									v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
-									v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
-									v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
+					v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
+					v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
+					v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
 
 	uint8_t recrypt_list_key[16];
 	std::memcpy(recrypt_list_key, &v2[0xC8], 16);
