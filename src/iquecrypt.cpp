@@ -356,7 +356,7 @@ void extract_v2(std::string file_name, bool extract_all) {
 		}
 	}
 	else {
-		std::cout << "Extracting files form Virage2 dump..." << std::endl;
+		std::cout << "Extracting files from Virage2 dump..." << std::endl;
 		write_file(bbid_str + "_SK_hash.bin", pointer, 20);
 	}
 
