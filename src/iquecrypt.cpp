@@ -58,7 +58,7 @@ void ique_crypt(char * argv[], int argc) {
 			rec_crypt(a.mode, a.rc_fn, a.v2_fn, a.iv_par, a.iv_in, a.rs_fn, a.cid);
 		}
 	}
-	if(error) {
+	if (error) {
 		argument_error();
 	}
 }
@@ -121,7 +121,20 @@ void aes_crypt(std::string mode, std::string file_name, bool length_known, int f
 	else {
 		argument_error();
 	}
-	write_file(prefix + file_name, file_buffer, file_length);
+
+	std::string out_file_name;
+	if (file_name.find_last_of('/') != std::string::npos) {
+		auto pos = file_name.find_last_of('/');
+		out_file_name = file_name.substr(0, pos + 1) + prefix + file_name.substr(pos + 1);
+	}
+	else if (file_name.find_last_of('\\') != std::string::npos) {
+		auto pos = file_name.find_last_of('\\');
+		out_file_name = file_name.substr(0, pos + 1) + prefix + file_name.substr(pos + 1);
+	}
+	else {
+		out_file_name = prefix + file_name;
+	}
+	write_file(out_file_name, file_buffer, file_length);
 	delete[] file_buffer;
 }
 
@@ -160,9 +173,9 @@ void rec_crypt(std::string mode, std::string rec_file_name, std::string v2_file_
 		}
 	}
 	uint8_t recrypt_list_iv[16] = { v2[0x94], v2[0x95], v2[0x96], v2[0x97],
-					v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
-					v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
-					v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[2], v2[0x97] + 1,
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[1], v2[0x97] + 2,
+									v2[0x94], v2[0x95], v2[0x96] + ovrflw[0], v2[0x97] + 3 };
 
 	uint8_t recrypt_list_key[16];
 	std::memcpy(recrypt_list_key, &v2[0xC8], 16);

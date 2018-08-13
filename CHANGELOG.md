@@ -1,3 +1,7 @@
+### v1.2.1 - 2018 08 13  
+
+* Fixed a bug when the filename of an app to encrypt or decrypt was passed as a file path.  
+
 ### v1.2.0 - 2018 06 22  
 
 * Passing in "-all" when extracting from a Virage2 dump will extract all info in one go.  

@@ -30,7 +30,7 @@
 uint8_t * read_file(std::string in_file_name, bool length_known, int & expected_length) {
 	std::ifstream fin;
 	fin.open(in_file_name, std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
-		if (!fin.is_open()) {
+	if (!fin.is_open()) {
 		fin.clear();
 		file_error(in_file_name);
 	}
