@@ -6,7 +6,7 @@
 	This might or might not change in the future. It is intended
 	to be used for doing operations on keys which are already known.
 
-	Copyright © 2018 Jbop (https://github.com/jbop1626)
+	Copyright Â© 2018 Jbop (https://github.com/jbop1626)
 
 	This file is a part of iQueCrypt.
 
@@ -25,6 +25,7 @@
 */
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 #include "ecc.hpp"
 
 /*
