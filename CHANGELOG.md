@@ -1,3 +1,11 @@
+### v1.3.0 - 2020 03 17  
+
+* Complete rewrite in C  
+
+* Added build scripts  
+
+* Added output argument for encrypt/decrypt modes  
+
 ### v1.2.1 - 2018 08 13  
 
 * Fixed a bug when the filename of an app to encrypt or decrypt was passed as a file path.  

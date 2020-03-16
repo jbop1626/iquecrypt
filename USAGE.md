@@ -16,30 +16,31 @@ If given a re-encrypted .rec file, it will decrypt using the console's 256-byte 
 
 ````
 Usage:  
-		decrypt -app [app file] -(f)key [title key] -(f)iv [content iv]  
-		decrypt -tk [encrypted title key] -(f)key [common key] -(f)iv [title key iv]  
-		decrypt -rec [rec file] -v2 [virage2 dump] -(f)iv [content iv] -rsys [recrypt.sys] -cid [content ID]  
-		
-Parameters:  	
-		-app	.app file input  
-		-tk	encrypted title key input  
-		-rec	.rec file input  
-		-key	encryption key input (in hexadecimal) on command line  
-		-fkey	encryption key input from file  
-		-iv	initialization vector input (in hexadecimal) on command line  
-		-fiv	initialization vector input from file  
-		-v2	256-byte dump of the appropriate console's Virage2  
-		-rsys	recrypt list input (e.g. recrypt.sys)  
-		-cid	content ID (in hexadecimal) of the title to be decrypted  
-		
+    decrypt -app [app file] -(f)key [title key] -(f)iv [content iv] -o [output]  
+    decrypt -tk [encrypted title key] -(f)key [common key] -(f)iv [title key iv] -o [output]  
+    decrypt -rec [rec file] -v2 [virage2 dump] -(f)iv [content iv] -rsys [recrypt.sys] -cid [content ID] -o [output]  
+    
+Parameters:  
+    -app    .app file input  
+    -tk     encrypted title key input  
+    -rec    .rec file input  
+    -key    encryption key input (in hexadecimal) on command line  
+    -fkey   encryption key input from file  
+    -iv     initialization vector input (in hexadecimal) on command line  
+    -fiv    initialization vector input from file  
+    -v2     256-byte dump of the appropriate console's Virage2  
+    -rsys   recrypt list input (e.g. recrypt.sys)  
+    -cid    content ID (in hexadecimal) of the title to be decrypted  
+    -o      output file
+    
 Example:  
-		iquecrypt decrypt -app 0098967F.app -fkey title_key.bin -iv 123456789ABCDEF10111213141516171  
-		Output: [dec]0098967F.app in same directory  
-		
-		iquecrypt decrypt -rec 0098967F.rec -v2 v2.bin -iv 123456789ABCDEF10111213141516171 -rsys recrypt.sys -cid 0098967f  
-		Output: output.bin (containing decrypted contents of 0098967F.rec) in same directory  
+    iquecrypt decrypt -app 0098967F.app -fkey title_key.bin -iv 123456789ABCDEF10111213141516171 -o [dec]0098967F.app  
+    Output: [dec]0098967F.app in same directory  
+    
+    iquecrypt decrypt -rec 0098967F.rec -v2 v2.bin -fiv content_iv.bin -rsys recrypt.sys -cid 0098967f -o output.bin  
+    Output: output.bin (containing decrypted contents of 0098967F.rec) in same directory  
 ````
-	
+    
 #### encrypt  
 
 Encrypts the given file with AES CBC encryption, using the provided key and initialization vector.  
@@ -52,30 +53,31 @@ If passed "-rec" and given a plaintext file such as an N64 ROM, it will encrypt 
 
 ````
 Usage:  
-		encrypt -app [app file] -(f)key [title key] -(f)iv [content iv]  
-		encrypt -tk [encrypted title key] -(f)key [common key] -(f)iv [title key iv]  
-		encrypt -rec [rec file] -v2 [virage2 dump] -(f)iv [content iv] -rsys [recrypt.sys] -cid [content ID]  
-		
-Parameters:  	
-		-app	.app file input  
-		-tk	title key input  
-		-rec	prospective .rec file input  
-		-key	encryption key input (in hexadecimal) on command line  
-		-fkey	encryption key input from file  
-		-iv	initialization vector input (in hexadecimal) on command line  
-		-fiv	initialization vector input from file  
-		-v2	256-byte dump of the appropriate console's Virage2  
-		-rsys	recrypt list input (e.g. recrypt.sys)  
-		-cid	content ID (in hexadecimal) of the title to be used as the host or donor for injection  
-		
+    encrypt -app [app file] -(f)key [title key] -(f)iv [content iv] -o [output]  
+    encrypt -tk [encrypted title key] -(f)key [common key] -(f)iv [title key iv] -o [output]  
+    encrypt -rec [rec file] -v2 [virage2 dump] -(f)iv [content iv] -rsys [recrypt.sys] -cid [content ID] -o [output]  
+    
+Parameters:  
+    -app    .app file input  
+    -tk     title key input  
+    -rec    prospective .rec file input  
+    -key    encryption key input (in hexadecimal) on command line  
+    -fkey   encryption key input from file  
+    -iv     initialization vector input (in hexadecimal) on command line  
+    -fiv    initialization vector input from file  
+    -v2     256-byte dump of the appropriate console's Virage2  
+    -rsys   recrypt list input (e.g. recrypt.sys)  
+    -cid    content ID (in hexadecimal) of the title to be used as the host or donor for injection  
+    -o      output file
+    
 Example:  
-		iquecrypt encrypt -app 0098967F.app -fkey title_key.bin -iv 123456789ABCDEF10111213141516171  
-		Output: [dec]0098967F.app in same directory  
-		
-		iquecrypt encrypt -rec 0098967F.z64 -v2 v2.bin -fiv content_iv.bin -rsys recrypt.sys -cid 0098967f  
-		Output: output.bin (containing encrypted contents of 0098967F.z64) in same directory  
+    iquecrypt encrypt -app 0098967F.app -fkey title_key.bin -iv 123456789ABCDEF10111213141516171 -o [dec]0098967F.app  
+    Output: [dec]0098967F.app in same directory  
+    
+    iquecrypt encrypt -rec 0098967F.z64 -v2 v2.bin -fiv content_iv.bin -rsys recrypt.sys -cid 0098967f -o output.bin  
+    Output: output.bin (containing encrypted contents of 0098967F.z64) in same directory  
 ````
-		
+    
 #### extract  
 
 Extracts information from a content metadata file, from a certain entry in a ticket.sys file, or from a Virage2 dump.  
@@ -88,27 +90,27 @@ If given a Virage2 dump, the user will be prompted to choose (y/n) if they want 
 
 ````
 Usage:  
-		extract -cmd [cmd file]  
-		extract -ticket [ticket file] -cid [content ID]  
-		extract -v2 [virage2 dump] (-all)  
-		
+    extract -cmd [cmd file]  
+    extract -ticket [ticket file] -cid [content ID]  
+    extract -v2 [virage2 dump] (-all)  
+    
 Parameters:  
-		-cmd	.cmd file input  
-		-ticket ticket file input (e.g. ticket.sys)  
-		-cid	content ID (in hexadecimal) of requested entry in ticket.sys  
-		-v2	Virage2 dump file input  
-		
+    -cmd    .cmd file input  
+    -ticket ticket file input (e.g. ticket.sys)  
+    -cid    content ID (in hexadecimal) of requested entry in ticket.sys  
+    -v2     Virage2 dump file input  
+    
 Examples:  
-		iquecrypt extract -cmd 0098967F.cmd  
-		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, and [cid]_content_iv.bin  
-		        in same directory.  
-			   
-		iquecrypt extract -ticket my_tickets -cid 0098967F  
-		Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin,  
-		        [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.  
-				
-		iquecrypt extract -v2 v2.bin  
-		Output: Depends on user input.  
+    iquecrypt extract -cmd 0098967F.cmd  
+    Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, and [cid]_content_iv.bin  
+            in same directory.  
+        
+    iquecrypt extract -ticket my_tickets -cid 0098967F  
+    Output: [cid]_title_key_enc.bin, [cid]_title_key_iv.bin, [cid]_content_iv.bin,  
+            [cid]_title_key_iv_2.bin, and [cid]_ecc_public_key.bin in same directory.  
+        
+    iquecrypt extract -v2 v2.bin  
+    Output: Depends on user input.  
 ````
 
 #### ecdh  
@@ -119,14 +121,14 @@ Decrypting a twice-encrypted title key (e.g. using the decrypt mode with "-tk" p
 
 ````
 Usage:  
-		ecdh -pvt [ECC priv key file] -pub [ECC pub key file]
-		
+    ecdh -pvt [ECC priv key file] -pub [ECC pub key file]
+    
 Parameters:
-		-pvt	ECC private key file input
-		-pub	ECC public key file input
+    -pvt	ECC private key file input
+    -pub	ECC public key file input
 
 Example:
-		iquecrypt ecdh -pvt 0B0E0E0F_ecc_private_key.bin -pub 0098967F_ecc_public_key.bin
-		Output: ecdh_key.bin in same directory.
+    iquecrypt ecdh -pvt 0B0E0E0F_ecc_private_key.bin -pub 0098967F_ecc_public_key.bin
+    Output: ecdh_key.bin in same directory.
 ````
-  
+
