@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 // #define the macros below to 1/0 to enable/disable the mode of operation.
 //
 // CBC enables AES encryption in CBC-mode of operation.
@@ -58,8 +62,8 @@ void AES_ctx_set_iv(struct AES_ctx* ctx, const uint8_t* iv);
 // buffer size is exactly AES_BLOCKLEN bytes; 
 // you need only AES_init_ctx as IV is not used in ECB 
 // NB: ECB is considered insecure for most uses
-void AES_ECB_encrypt(struct AES_ctx* ctx, const uint8_t* buf);
-void AES_ECB_decrypt(struct AES_ctx* ctx, const uint8_t* buf);
+void AES_ECB_encrypt(const struct AES_ctx* ctx, uint8_t* buf);
+void AES_ECB_decrypt(const struct AES_ctx* ctx, uint8_t* buf);
 
 #endif // #if defined(ECB) && (ECB == !)
 
@@ -86,5 +90,8 @@ void AES_CTR_xcrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, uint32_t length);
 
 #endif // #if defined(CTR) && (CTR == 1)
 
+#if defined (__cplusplus)
+}
+#endif
 
 #endif //_AES_H_
